@@ -60,13 +60,10 @@ const int PC_2[56] = { 14,17,11,24,1,5,
                        44,49,39,56,34,53,
                        46,42,50,36,29,32 };
 
-const int SBOX_1[4][16] = { {14, 5, 7, 2, 11, 8, 1, 15, 0, 10, 9, 4, 6, 13, 12, 3},
+const int SBOX[4][16] = { {14, 5, 7, 2, 11, 8, 1, 15, 0, 10, 9, 4, 6, 13, 12, 3},
                            {5, 0, 8, 15, 14, 3, 2, 12, 11, 7, 6, 9, 13, 4, 1, 10},
                            {4, 9, 2, 14, 8, 7, 13, 0, 10, 12, 15, 1, 5, 11, 3, 6},
                            {9, 6, 15, 5, 3, 8, 4, 11, 7, 1, 12, 2, 0, 14, 10, 13} };
-
-typedef const int(*SBOX)[16];
-SBOX SBox[8] = { SBOX_1, SBOX_1, SBOX_1, SBOX_1, SBOX_1, SBOX_1, SBOX_1, SBOX_1 };
 
 class DES {
 private:
@@ -180,7 +177,7 @@ public:
         // Равномерно разделить на 8 групп и пройти через 8 разных S-блоков для преобразования 6-4
         for (int i = 0; i < 8; i++) {
             string sub = res.substr(i * 6, 6);
-            string sub_m = Feistel_SBOX(sub, i);
+            string sub_m = Feistel_SBOX(sub);
             // Подключаемся последовательно, чтобы получить строку длиной 32 бита
             rec += sub_m;
         }
@@ -198,10 +195,10 @@ public:
     }
 
     // Feistel SBOX
-    string Feistel_SBOX(string str, int num) {
+    string Feistel_SBOX(string str) {
         int n = (str[0] - 48) * 2 + (str[5] - 48);
         int m = (str[1] - 48) * 8 + (str[2] - 48) * 4 + (str[3] - 48) * 2 + (str[4] - 48);
-        int number = SBox[num][n][m];
+        int number = SBOX[n][m];
         string res = "";
         while (number > 0) {
             res = (char)(number % 2 + 48) + res;
