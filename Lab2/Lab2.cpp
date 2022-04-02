@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <vector>
 
-#define DEBUG 0
-
 using namespace std;
 
 const int IP[64] = { 58,50,42,34,26,18,10,2,
@@ -114,18 +112,11 @@ private:
     vector<string> K;
 public:
     DES() {}
-    // 加密
     void encode(string str, string key) {
         m_code = "";
         total_code = str;
         total_key = key;
-        if (DEBUG) {
-            cout << "getkeys" << endl;
-        }
         getKeys();
-        if (DEBUG) {
-            cout << "formatSourceCode" << endl;
-        }
         formatSourceCode();
         int count = 0;
         int s = total_code.size();
@@ -139,29 +130,13 @@ public:
             }
             count++;
             fill(sub);
-            if (DEBUG) {
-                cout << "code length: " << tempCode_1.size() << endl;
-            }
-            if (DEBUG) {
-                cout << "IP0" << endl;
-            }
             getIP0();
-            if (DEBUG) {
-                cout << "iterationT" << endl;
-            }
             string a = iterationT_A(1, 16);
-            if (DEBUG) {
-                cout << "IP1" << endl;
-            }
             string result = getIP1(a);
             m_code += result;
-            if (DEBUG) {
-                cout << result.size() << endl;
-            }
         }
         cout << m_code << endl;
     }
-    // 解密
     void decode(string str, string key) {
         int count = 0;
         code = "";
@@ -170,21 +145,8 @@ public:
             tempCode_1 = str.substr(count * 64, 64);
             total_key = key;
             count++;
-            if (DEBUG) {
-                cout << "K :" << endl;
-                for (int i = 0; i < K.size(); i++) {
-                    cout << K[i] << endl;
-                }
-                cout << "IP0" << endl;
-            }
             getIP0();
-            if (DEBUG) {
-                cout << "iterationT" << endl;
-            }
             string a = iterationT_D(16, 1);
-            if (DEBUG) {
-                cout << "IP1" << endl;
-            }
             string result = getIP1(a);
             if (count * 64 == str.size()) {
                 code += formatAndReduceResult(result);
@@ -195,8 +157,11 @@ public:
         }
         cout << code << endl;
     }
-    // 密码部分
-    // 填充字符串
+
+    ///============================================================================================================================
+
+    // часть пароля
+    // заполняем строку
     void fill(string str) {
         tempCode_1 = "";
         for (int i = 0; i < 8; i++) {
@@ -211,17 +176,16 @@ public:
             }
             tempCode_1 += s;
         }
-        if (DEBUG) {
-            cout << tempCode_1 << endl;
-        }
     }
-    // 填充字符串
+
+    // заполняем строку
     void formatSourceCode() {
         if (total_code.size() % 8 == 0) {
             total_code += "\b\b\b\b\b\b\b\b";
         }
     }
-    // IP置换(LR)
+
+    // Замена IP (LR)
     void getIP0() {
         tempCode_2 = tempCode_1;
         L = "";
@@ -237,36 +201,29 @@ public:
                 R += tempCode_2[i];
             }
         }
-
-        if (DEBUG) {
-            cout << "tempCode_2: " << tempCode_2 << endl;
-            cout << "L: " << L << endl;
-            cout << "R: " << R << endl;
-        }
     }
-    // Feistel轮函数
+
+    // Круглая функция Фейстеля
     string Feistel(string R, string K) {
         string res = "", rec = "";
-        // 将长度为32位的串 Ri-1 作 E-扩展
+        // E-расширение строки Ri-1 до 32 бит
         string ER = E_expend(R);
-        // E(Ri-1) 和长度为48位的子密钥 Ki 作异或运算
+        // E (Ri-1) и подключ Ki длиной 48 бит подвергаются операции XOR
         for (int i = 0; i < 48; i++) {
             res += (char)(((ER[i] - 48) ^ (K[i] - 48)) + 48);
         }
-        // 平均分成8个分组, 分别经过8个不同的 S-盒进行 6-4 转换
+        // Равномерно разделить на 8 групп и пройти через 8 разных S-блоков для преобразования 6-4
         for (int i = 0; i < 8; i++) {
             string sub = res.substr(i * 6, 6);
             string sub_m = Feistel_SBOX(sub, i);
-            // 顺序连接得到长度为32位的串
+            // Подключаемся последовательно, чтобы получить строку длиной 32 бита
             rec += sub_m;
         }
-        if (DEBUG) {
-            cout << "substring length: " << rec.size() << endl;
-        }
-        // P-置换
+        // P- перестановка
         return getPTransform(rec);
     }
-    // P置换
+
+    // P замена
     string getPTransform(string str) {
         string res = "";
         for (int i = 0; i < 32; i++) {
@@ -274,6 +231,7 @@ public:
         }
         return res;
     }
+
     // Feistel SBOX
     string Feistel_SBOX(string str, int num) {
         int n = (str[0] - 48) * 2 + (str[5] - 48);
@@ -287,24 +245,19 @@ public:
         while (res.size() < 4) {
             res = "0" + res;
         }
-        if (DEBUG) {
-            cout << "SBox: " << endl;
-            cout << str << " " << num << " " << res << endl;
-        }
         return res;
     }
-    // E扩展
+
+    // Расширение E
     string E_expend(string str) {
         string res = "";
         for (int i = 0; i < 48; i++) {
             res += str[E_exp[i] - 1];
         }
-        if (DEBUG) {
-            cout << "E expend: " << res << endl;
-        }
         return res;
     }
-    // XOR操作
+
+    // операция XOR
     string XORoperation(string a, string b) {
         string res = "";
         for (int i = 0; i < 32; i++) {
@@ -312,7 +265,8 @@ public:
         }
         return res;
     }
-    // T迭代(加密)
+
+    // Т итерация (зашифрованная)
     string iterationT_A(int begin, int end) {
         string L_temp, R_temp;
         for (int i = begin - 1; i <= end - 1; i++) {
@@ -323,7 +277,8 @@ public:
         }
         return R + L;
     }
-    // T迭代(解密)
+
+    // T итерация (расшифрована)
     string iterationT_D(int begin, int end) {
         string L_temp, R_temp;
         for (int i = begin - 1; i >= end - 1; i--) {
@@ -334,7 +289,8 @@ public:
         }
         return R + L;
     }
-    // IP逆置换
+
+    // Обратная замена IP
     string getIP1(string str) {
         string res = "";
         for (int i = 0; i < 64; i++) {
@@ -342,7 +298,8 @@ public:
         }
         return res;
     }
-    // 整理明文1
+
+    // сортируем открытый текст 1
     string formatResult(string str) {
         int count = 0;
         string res = "";
@@ -353,16 +310,13 @@ public:
         }
         return res;
     }
-    // 整理明文2
+
+    // сортируем открытый текст 2
     string formatAndReduceResult(string str) {
         int count = 0;
         string res = "";
         string a = str.substr(str.size() - 8, 8);
         int n = (int)(Two2Ten(a));
-        if (DEBUG) {
-            cout << a << endl;
-            cout << n << endl;
-        }
         while (count < 8 - n) {
             a = str.substr(count * 8, 8);
             res += (char)(Two2Ten(a));
@@ -370,7 +324,8 @@ public:
         }
         return res;
     }
-    // 二进制转十进制
+
+    // Двоичное в десятичное
     int Two2Ten(string num) {
         int base = 1;
         int res = 0;
@@ -380,8 +335,11 @@ public:
         }
         return res;
     }
-    // 子密钥部分
-    // 子密钥格式化
+
+    //=============================================================================================================================
+
+    // часть подраздела
+    // Формат подключа
     string formatKey() {
         string res = "", rec = "";
         for (int i = 0; i < 8; i++) {
@@ -396,23 +354,17 @@ public:
             }
             rec += res;
         }
-        if (DEBUG) {
-            cout << "rec: " << rec << endl;
-        }
         return rec;
     }
-    // PC1置换
+    // Замена PC1
     string getPC1Key(string str) {
         string res = str;
         for (int i = 0; i < 56; i++) {
             res[i] = str[PC_1[i] - 1];
         }
-        if (DEBUG) {
-            cout << "res: " << res << endl;
-        }
         return res;
     }
-    // 获取C、D
+    // Получаем C, D
     void get_C_D(string str) {
         C = "";
         D = "";
@@ -432,12 +384,8 @@ public:
                 D += str[i];
             }
         }
-        if (DEBUG) {
-            cout << "C: " << C << endl;
-            cout << "D: " << D << endl;
-        }
     }
-    // LS置换
+    // Замена LS
     void getKeyI() {
         //string C_temp = C, D_temp = D;
         for (int i = 1; i <= 16; i++) {
@@ -454,7 +402,7 @@ public:
             K.push_back(t);
         }
     }
-    // LS置换(1)
+    // LS перестановка (1)
     void LS_1(string& str) {
         char a = str[0];
         for (int i = 0; i < str.size() - 1; i++) {
@@ -462,7 +410,7 @@ public:
         }
         str[str.size() - 1] = a;
     }
-    // LS置换(2)
+    // LS перестановка (2)
     void LS_2(string& str) {
         char a = str[0], b = str[1];
         for (int i = 0; i < str.size() - 2; i++) {
@@ -471,7 +419,7 @@ public:
         str[str.size() - 2] = a;
         str[str.size() - 1] = b;
     }
-    // PC2置换
+    // Замена PC2
     string getPC2Key(string str) {
         string res = str;
         for (int i = 0; i < 48; i++) {
@@ -487,7 +435,7 @@ public:
         res.erase(8, 1);
         return res;
     }
-    // 获取子密钥的总函数
+    // Получаем общую функцию подраздела
     void getKeys() {
         vector<string> t;
         K = t;
